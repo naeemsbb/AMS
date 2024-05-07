@@ -204,7 +204,7 @@ def predict_peptide_structure(sequences):
     return y_pred, prediction_probability
   
 # Streamlit app setup
-#st.title("Protein Sequence Submission")
+st.title("Protein Sequence Submission")
 
 if 'page' not in st.session_state:
     st.session_state.page = 'input'
