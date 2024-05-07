@@ -1,0 +1,357 @@
+import streamlit as st
+import pandas as pd
+import joblib
+from sklearn.ensemble import RandomForestClassifier
+from Pfeature.pfeature import atc_wp, btc_wp, ctc_wp, sep_wp
+import os
+import numpy as np
+import streamlit as st
+from stmol import showmol
+import py3Dmol
+import requests
+import biotite.structure.io as bsio
+from Bio import SeqIO
+from io import StringIO
+
+
+def main():
+    # Set the color scheme
+    primary_color = '#A7C957'
+    secondary_color = '#3C3C3C'
+    tertiary_color = '#FFFFFF'
+    background_color = '#F4F4F4'
+    text_color = '#333333'
+    font = 'Times New Roman'
+
+    # Set the page config
+    st.set_page_config(
+        page_title='AntimicroSeek',
+        layout= 'wide',
+        initial_sidebar_state='expanded',
+        page_icon='🧬',
+    )
+
+    # Set the theme
+    st.markdown(f"""
+    <style>
+        .reportview-container {{
+            background-color: {background_color};
+            color: {text_color};
+            font-family: {font};
+        }}
+        .sidebar .sidebar-content {{
+            background-color: {secondary_color};
+            color: {tertiary_color};
+        }}
+        .streamlit-button {{
+            background-color: {primary_color};
+            color: {tertiary_color};
+        }}
+        footer {{
+            font-family: {font};
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Add university logos to the page
+    left_logo, center, right_logo = st.columns([1, 2, 1])
+    left_logo.image("PU.png", width=280)
+    right_logo.image("LOGO_u.png", width=280)
+
+    # Add header with application title and description
+    with center:
+      st.markdown("<h1 style='font-family:Times New Roman;font-size:40px;'>AntimicroSeek</h1>", unsafe_allow_html=True)
+      st.write("")
+      st.markdown("<p style='font-family:Times New Roman;font-size:20px;'>Unlock the future of Antimicrobial peptide design with AntimicroSeek. The prediction model has been designed utilizing a balanced dataset of AMPs and Non-Amps having an accuracy of 93%. Its an in-silico approach towards the prediction of efficient AMPs. Join us on this groundbreaking journey into predictive peptide analytics.</p>", unsafe_allow_html=True)  
+
+if __name__ == "__main__":
+    main()
+
+# Load the trained model
+model_file = "my_model.Nkl"  # Ensure this path is correct
+model = joblib.load(model_file)
+
+if 'current_seq_idx' not in st.session_state:
+    st.session_state.current_seq_idx = 0
+
+#         # Define the feature extraction section
+def atc(input):
+            a = input.rstrip("txt")
+            output = a + 'atc.csv'
+            input_file = os.path.join(os.getcwd(), 'Pfeature', 'input_sam.csv')
+            with open(input_file, 'w') as f:
+                f.write(input)
+            df_out = atc_wp(input_file, output)
+            df_in = pd.read_csv(output)
+            os.remove(input_file)
+            os.remove(output)
+            return df_in
+            
+def btc(input):
+            a = input.rstrip("txt")
+            output = a + 'btc.csv'
+            input_file = os.path.join(os.getcwd(), 'Pfeature', 'input_sam.csv')
+            with open(input_file, 'w') as f:
+                f.write(input)
+            df_out = btc_wp(input_file, output)
+            df_in = pd.read_csv(output)
+            os.remove(input_file)
+            os.remove(output)
+            return df_in
+def ctc(input):
+            a = input.rstrip("txt")
+            output = a + 'ctc.csv'
+            input_file = os.path.join(os.getcwd(), 'Pfeature', 'input_sam.csv')
+            with open(input_file, 'w') as f:
+                f.write(input)
+            df_out = ctc_wp(input_file, output)
+            df_in = pd.read_csv(output)
+            os.remove(input_file)
+            os.remove(output)
+            return df_in
+            
+def sep(input):
+            a = input.rstrip("txt")
+            output = a + 'sep.csv'
+            input_file = os.path.join(os.getcwd(), 'Pfeature', 'input_sam.csv')
+            with open(input_file, 'w') as f:
+                f.write(input)
+            df_out = sep_wp(input_file, output)
+            df_in = pd.read_csv(output)
+            os.remove(input_file)
+            os.remove(output)
+            return df_in
+def is_valid_sequence(sequence):
+    valid_amino_acids = 'ACDEFGHIKLMNPQRSTVWY'
+    if not sequence or not all(char.upper() in valid_amino_acids for char in sequence):
+        raise ValueError("You have entered an invalid sequence. Please check your input.")
+    return True
+
+def update(sequence_list):
+    pdb_strings = []
+    for sequence in sequence_list:
+        # Convert the sequence to uppercase for API compatibility
+        uppercase_sequence = sequence.upper()
+
+        if not is_valid_sequence(uppercase_sequence):
+            st.error(f"Invalid sequence: {sequence}")
+            continue
+
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        response = requests.post('https://api.esmatlas.com/foldSequence/v1/pdb/', headers=headers, data=uppercase_sequence, verify=False)
+        if response.status_code == 200:
+            pdb_string = response.content.decode('utf-8')
+            pdb_strings.append(pdb_string)
+        else:
+            st.error(f"Error with sequence {sequence}: Status code {response.status_code}")
+    return pdb_strings
+
+  
+# 3D Structure Prediction Functions
+def render_mol(pdb):
+    if not pdb.strip():
+        st.error("Empty PDB data, cannot render.")
+        return
+
+    pdbview = py3Dmol.view()
+    pdbview.addModel(pdb, 'pdb')
+    pdbview.setStyle({'cartoon': {'color': 'spectrum'}})
+    pdbview.setBackgroundColor('white')
+    pdbview.zoomTo()
+    pdbview.zoom(2, 800)
+    pdbview.spin(True)
+    showmol(pdbview, height=500, width=800)
+    
+def show_next():
+    if 'pdb_strings' in st.session_state:
+        st.session_state.current_seq_idx = (st.session_state.current_seq_idx + 1) % len(st.session_state.pdb_strings)
+        render_current_structure()
+
+def show_previous():
+    if 'pdb_strings' in st.session_state:
+        st.session_state.current_seq_idx = (st.session_state.current_seq_idx - 1) % len(st.session_state.pdb_strings)
+        render_current_structure()
+        
+
+def render_current_structure():
+    if 'pdb_strings' in st.session_state and st.session_state.pdb_strings:
+        current_pdb = st.session_state.pdb_strings[st.session_state.current_seq_idx]
+        with structure_container:
+            # Displaying the index of the current structure
+            st.markdown(f"**Displaying Structure {st.session_state.current_seq_idx + 1} of {len(st.session_state.pdb_strings)}**")
+
+            render_mol(current_pdb)
+
+            # Adding a download button for the current structure
+            st.download_button(
+                label="Download this Structure",
+                data=current_pdb,
+                file_name=f"structure_{st.session_state.current_seq_idx + 1}.pdb",
+                mime='chemical/x-pdb'
+            )
+
+# Function to parse FASTA format
+def parse_fasta(file_content):
+    sequences = []
+    current_sequence = ""
+    for line in file_content:
+        if line.startswith('>'):
+            if current_sequence:
+                sequences.append(current_sequence)
+                current_sequence = ""
+        else:
+            current_sequence += line.strip()
+    if current_sequence:
+        sequences.append(current_sequence)
+    return sequences
+
+# Predict function using the model
+def predict_peptide_structure(sequences):
+    atc_df_list = [atc(seq) for seq in sequences if seq]
+    btc_df_list = [btc(seq) for seq in sequences if seq]
+    ctc_df_list = [ctc(seq) for seq in sequences if seq]
+   
+
+    df_features = pd.concat([pd.concat(atc_df_list, axis=0), 
+                             pd.concat(btc_df_list, axis=0),
+                             pd.concat(ctc_df_list, axis=0)], axis=1)
+
+    feature_cols = ['ATC_H', 'ATC_C', 'ATC_O', 'ATC_N', 'ATC_S', 'BTC_T', 'BTC_H', 'BTC_S', 'BTC_D', 'CTC_111', 'CTC_112', 'CTC_113', 'CTC_114', 'CTC_115', 'CTC_116', 'CTC_117', 'CTC_121', 'CTC_122', 'CTC_123', 'CTC_124', 'CTC_125', 'CTC_126', 'CTC_127', 'CTC_131', 'CTC_132', 'CTC_133', 'CTC_134', 'CTC_135', 'CTC_136', 'CTC_137', 'CTC_141', 'CTC_142', 'CTC_143', 'CTC_144', 'CTC_145', 'CTC_146', 'CTC_147', 'CTC_151', 'CTC_152', 'CTC_153', 'CTC_154', 'CTC_155', 'CTC_156', 'CTC_157', 'CTC_161', 'CTC_162', 'CTC_163', 'CTC_164', 'CTC_165', 'CTC_166', 'CTC_167', 'CTC_171', 'CTC_172', 'CTC_173', 'CTC_174', 'CTC_175', 'CTC_176', 'CTC_177', 'CTC_211', 'CTC_212', 'CTC_213', 'CTC_214', 'CTC_215', 'CTC_216', 'CTC_217', 'CTC_221', 'CTC_222', 'CTC_223', 'CTC_224', 'CTC_225', 'CTC_226', 'CTC_227', 'CTC_231', 'CTC_232', 'CTC_233', 'CTC_234', 'CTC_235', 'CTC_236', 'CTC_237', 'CTC_241', 'CTC_242', 'CTC_243', 'CTC_244', 'CTC_245', 'CTC_246', 'CTC_247', 'CTC_251', 'CTC_252', 'CTC_253', 'CTC_254', 'CTC_255', 'CTC_256', 'CTC_257', 'CTC_261', 'CTC_262', 'CTC_263', 'CTC_264', 'CTC_265', 'CTC_266', 'CTC_267', 'CTC_271', 'CTC_272', 'CTC_273', 'CTC_274', 'CTC_275', 'CTC_276', 'CTC_277', 'CTC_311', 'CTC_312', 'CTC_313', 'CTC_314', 'CTC_315', 'CTC_316', 'CTC_317', 'CTC_321', 'CTC_322', 'CTC_323', 'CTC_324', 'CTC_325', 'CTC_326', 'CTC_327', 'CTC_331', 'CTC_332', 'CTC_333', 'CTC_334', 'CTC_335', 'CTC_336', 'CTC_337', 'CTC_341', 'CTC_342', 'CTC_343', 'CTC_344', 'CTC_345', 'CTC_346', 'CTC_347', 'CTC_351', 'CTC_352', 'CTC_353', 'CTC_354', 'CTC_355', 'CTC_356', 'CTC_357', 'CTC_361', 'CTC_362', 'CTC_363', 'CTC_364', 'CTC_365', 'CTC_366', 'CTC_367', 'CTC_371', 'CTC_372', 'CTC_373', 'CTC_374', 'CTC_375', 'CTC_376', 'CTC_377', 'CTC_411', 'CTC_412', 'CTC_413', 'CTC_414', 'CTC_415', 'CTC_416', 'CTC_417', 'CTC_421', 'CTC_422', 'CTC_423', 'CTC_424', 'CTC_425', 'CTC_426', 'CTC_427', 'CTC_431', 'CTC_432', 'CTC_433', 'CTC_434', 'CTC_435', 'CTC_436', 'CTC_437', 'CTC_441', 'CTC_442', 'CTC_443', 'CTC_444', 'CTC_445', 'CTC_446', 'CTC_447', 'CTC_451', 'CTC_452', 'CTC_453', 'CTC_454', 'CTC_455', 'CTC_456', 'CTC_457', 'CTC_461', 'CTC_462', 'CTC_463', 'CTC_464', 'CTC_465', 'CTC_466', 'CTC_467', 'CTC_471', 'CTC_472', 'CTC_473', 'CTC_474', 'CTC_475', 'CTC_476', 'CTC_477', 'CTC_511', 'CTC_512', 'CTC_513', 'CTC_514', 'CTC_515', 'CTC_516', 'CTC_517', 'CTC_521', 'CTC_522', 'CTC_523', 'CTC_524', 'CTC_525', 'CTC_526', 'CTC_527', 'CTC_531', 'CTC_532', 'CTC_533', 'CTC_534', 'CTC_535', 'CTC_536', 'CTC_537', 'CTC_541', 'CTC_542', 'CTC_543', 'CTC_544', 'CTC_545', 'CTC_546', 'CTC_547', 'CTC_551', 'CTC_552', 'CTC_553', 'CTC_554', 'CTC_555', 'CTC_556', 'CTC_557', 'CTC_561', 'CTC_562', 'CTC_563', 'CTC_564', 'CTC_565', 'CTC_566', 'CTC_567', 'CTC_571', 'CTC_572', 'CTC_573', 'CTC_574', 'CTC_575', 'CTC_576', 'CTC_577', 'CTC_611', 'CTC_612', 'CTC_613', 'CTC_614', 'CTC_615', 'CTC_616', 'CTC_617', 'CTC_621', 'CTC_622', 'CTC_623', 'CTC_624', 'CTC_625', 'CTC_626', 'CTC_627', 'CTC_631', 'CTC_632', 'CTC_633', 'CTC_634', 'CTC_635', 'CTC_636', 'CTC_637', 'CTC_641', 'CTC_642', CTC_643', 'CTC_644', 'CTC_645', 'CTC_646', 'CTC_647', 'CTC_651', 'CTC_652', 'CTC_653', 'CTC_654', 'CTC_655', 'CTC_656', 'CTC_657', 'CTC_661', 'CTC_662', 'CTC_663', 'CTC_664', 'CTC_665', 'CTC_666', 'CTC_667', 'CTC_671', 'CTC_672', 'CTC_673', 'CTC_674', 'CTC_675', 'CTC_676', 'CTC_677', 'CTC_711', 'CTC_712', 'CTC_713', 'CTC_714', 'CTC_715', 'CTC_716', 'CTC_717', 'CTC_721', 'CTC_722', 'CTC_723', 'CTC_724', 'CTC_725', 'CTC_726', 'CTC_727', 'CTC_731', 'CTC_732', 'CTC_733', 'CTC_734', 'CTC_735', 'CTC_736', 'CTC_737', 'CTC_741', 'CTC_742', 'CTC_743', 'CTC_744', 'CTC_745', 'CTC_746', 'CTC_747', 'CTC_751', 'CTC_752', 'CTC_753', 'CTC_754', 'CTC_755', 'CTC_756', 'CTC_757', 'CTC_761', 'CTC_762', 'CTC_763', 'CTC_764', 'CTC_765', 'CTC_766', 'CTC_767', 'CTC_771', 'CTC_772', 'CTC_773', 'CTC_774', 'CTC_775', 'CTC_776', 'CTC_777']
+    df_features = df_features.reindex(columns=feature_cols)
+    y_pred = model.predict(df_features)
+    prediction_probability = model.predict_proba(df_features)[:,1]
+    
+
+    return y_pred, prediction_probability
+  
+# Streamlit app setup
+#st.title("Protein Sequence Submission")
+
+if 'page' not in st.session_state:
+    st.session_state.page = 'input'
+if 'submit_count' not in st.session_state:
+        st.session_state.submit_count = 0
+# Page 1: Input
+st.title("Sequence Submission")
+
+if 'page' not in st.session_state:
+    st.session_state.page = 'input'
+if 'submit_count' not in st.session_state:
+        st.session_state.submit_count = 0
+# Page 1: Input
+if st.session_state.page == 'input':
+    st.subheader("Please Enter the Peptide Sequence in FASTA Format")
+    fasta_file = st.file_uploader("Or Upload FASTA file", type=["fasta", "txt"])
+
+    submit_button = st.button("Submit")
+
+    if submit_button:
+        st.session_state.submit_count += 1
+
+    if fasta_file:
+        fasta_content = fasta_file.getvalue().decode("utf-8").splitlines()
+        protein_sequences = parse_fasta(fasta_content)
+        st.info("File uploaded. Please click on 'Submit' to process.")
+
+    if submit_button:
+        if protein_sequences:
+            sequences_list = protein_sequences.split('\n') if isinstance(protein_sequences, str) else protein_sequences
+            valid_sequences = []
+            for seq in sequences_list:
+                try:
+                    if is_valid_sequence(seq):
+                        valid_sequences.append(seq)
+                except ValueError as e:
+                    st.error(str(e))
+                    break
+
+            if valid_sequences:
+                st.session_state.protein_sequences = valid_sequences
+                y_pred, prediction_probability = predict_peptide_structure(st.session_state.protein_sequences)
+                st.session_state.prediction = y_pred
+                st.session_state.prediction_probability = prediction_probability
+                st.session_state.page = 'output'
+        else:
+            st.warning("Please enter protein sequences or upload a file.")
+
+# Page 2: Output (including prediction results)
+elif st.session_state.page == 'output':
+    st.subheader("Prediction Results")
+
+    # Creating the DataFrame
+    results_df = pd.DataFrame({
+        'Index': range(1, len(st.session_state.protein_sequences) + 1),
+        'Peptide Sequence': st.session_state.protein_sequences,
+        'Predicted Probability': st.session_state.prediction_probability,
+        'Class Label': st.session_state.prediction
+    })
+
+    # Display the DataFrame as a table
+    st.table(results_df)
+
+    # Convert DataFrame to CSV string for download
+    csv = results_df.to_csv(index=False)
+    st.download_button(
+        label="Download Results as CSV",
+        data=csv,
+        file_name='prediction_results.csv',
+        mime='text/csv',
+    )
+
+    st.button("Back", on_click=lambda: setattr(st.session_state, 'page', 'input'))
+    structure_container = st.container()
+
+    # Check if any AMPs are identified and trigger 3D structure prediction
+    predict_3d_button = st.button("Predict 3D Structure")
+    amp_sequences = []
+    if predict_3d_button:
+        predictions_list = st.session_state.prediction
+        amp_sequences = [seq for seq, pred in zip(st.session_state.protein_sequences, predictions_list) if pred == 'AMPs']
+    
+    if acp_sequences:
+        st.session_state.pdb_strings = update(amp_sequences)
+        st.session_state.current_seq_idx = 0  # Initialize the sequence index
+        render_current_structure()
+
+    # Display navigation buttons regardless of the condition
+    if 'pdb_strings' in st.session_state and len(st.session_state.pdb_strings) > 1:
+        col1, col2 = st.columns([1, 1])
+        if st.session_state.current_seq_idx > 0:
+            col1.button("Previous", on_click=show_previous)
+        if st.session_state.current_seq_idx < len(st.session_state.pdb_strings) - 1:
+            col2.button("Next", on_click=show_next)
+            
+
+# Add a section with the developers' information at the bottom of the page
+st.markdown("---")
+st.header("AntimicroSeek Team:")     
+
+# Add the profiles as individual cards
+row1, row2 = st.columns([1, 1])
+row3 = st.columns(1)
+
+
+with row1:
+ #st.image("my-photo.jpg", width=100)
+ st.write("")
+ st.write("### Dr. Naeem Mahmood Ashraf")
+ st.write("Assistant Professor")
+ st.write("School of Biochemistry and Biotechnology")
+ st.write("University of the Punjab")
+ st.write("Email: naeem.sbb@pu.edu.pk")
+
+with row2:
+ #st.image("colleague-photo.jpg", width=100)
+ st.write("")
+ st.write("### Arslan Hamid")
+ st.write("Email: ahamid@uni-bonn.de")
+
+#row3[0].image("teacher-photo.jpg", width=100)
+row3[0].write("")
+row3[0].write("### Shumaila Shahid")
+row3[0].write("MS Biochemistry")
+row3[0].write("School of Biochemistry and Biotechnology")
+row3[0].write("University of the Punjab")
+row3[0].write("Email: shumailasyed2608@gmail.com")
