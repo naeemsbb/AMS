@@ -25,7 +25,7 @@ def main():
 
     # Set the page config
     st.set_page_config(
-        page_title='ACPF',
+        page_title='AMS',
         layout= 'wide',
         initial_sidebar_state='expanded',
         page_icon='🧬',
@@ -60,9 +60,9 @@ def main():
 
     # Add header with application title and description
     with center:
-      st.markdown("<h1 style='font-family:Bodoni MT Black;font-size:40px;'>ACP-Finder(ACPF)</h1>", unsafe_allow_html=True)
+      st.markdown("<h1 style='font-family:Bodoni MT Black;font-size:40px;'>AM-Scanner(AMS)</h1>", unsafe_allow_html=True)
       st.write("")
-      st.markdown("<p style='font-family:Bodoni MT;font-size:20px;font-style: italic;'>ACP-Finder (ACPF) is a powerful web application for predicting the likelihood of a peptide being anticancer or non-anticancer. Our machine learning-based model, built on a large balanced dataset and using a random forest classifier, achieves an accuracy of 89%. ACPF also includes structure visualization of anticancer peptides and highlights the best features in it. Try ACPF today and discover the potential of your peptide sequences!</p>", unsafe_allow_html=True)  
+      st.markdown("<p style='font-family:Bodoni MT;font-size:20px;font-style: italic;'>Unlock the potential of antimicrobial peptides with our state-of-the-art scanner, powered by the robust Random Forest algorithm. Boasting an impressive accuracy of 91%, our tool efficiently identifies antimicrobial properties in protein sequences, paving the way for innovative solutions in combating microbial resistance. Step into the future of antimicrobial research with reliability and scientific precision!</p>", unsafe_allow_html=True)  
 
 if __name__ == "__main__":
     main()
@@ -310,7 +310,6 @@ st.header("Developers:")
 row1, row2 = st.columns([1, 1])
 row3 = st.columns(1)
 
-
 with row1:
  #st.image("my-photo.jpg", width=100)
  st.write("")
@@ -320,6 +319,13 @@ with row1:
  st.write("University of the Punjab")
  st.write("Email: Naeem.sbb@pu.edu.pk")
 
+ #row3[0].image("teacher-photo.jpg", width=100)
+ row3[0].write("")
+ row3[0].write("### Dr Muahmmad Khurshid")
+ row3[0].write("Email: khurshid.ibb@pu.edu.pk")
+
+
+
 with row2:
  #st.image("colleague-photo.jpg", width=100)
  st.write("")
@@ -328,5 +334,5 @@ with row2:
 
 #row3[0].image("teacher-photo.jpg", width=100)
 row3[0].write("")
-row3[0].write("### Kashaf Azam")
-row3[0].write("Email: kashafazam09@gmail.com")
+row3[0].write("### Syeda Shumaila")
+row3[0].write("Email: shumailasyed2608@gmail.com")
