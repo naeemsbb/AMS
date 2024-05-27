@@ -15,19 +15,23 @@ License
 This project is licensed under the MIT License - see the LICENSE.md file for details.
 
 Acknowledgments
+
 All contributors who have invested their time in improving this model
 (1) Shumaila Syed, 
 MS Scholar, 
 School of Biochemistry and Biotechnology, 
 University of the Punjab
+
 (2) Arslan Hamid
 PhD Scholar
 University of Bonn, Germany 
+
 (3) Naeem Mahmood Ashraf (PhD)
 Assistant Professor 
 School of Biochemistry and Biotechnology
 University of the Punjab
 naeem.sbb@pu.edu.pk
+
 Community feedback and suggestions that help us enhance our tool.
 
 Contact
